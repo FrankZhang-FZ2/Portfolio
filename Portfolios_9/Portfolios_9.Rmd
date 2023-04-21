@@ -1,0 +1,68 @@
+---
+title: "Portfolios_9"
+author: "Qilin Zhang"
+date: "2023-04-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+```{r include = FALSE}
+library(haven)
+library(tidyverse)
+library(foreign)
+library(lme4)
+library(lmerTest)
+library(mvnormtest)
+library(mvnormalTest)
+library(psych)
+library(ggpubr)
+library(rstatix)
+library(heplots)
+```
+
+```{r read file}
+#MLM
+MLM <- read_sav("MLM.sav")
+```
+
+
+## MLM
+
+```{r MLM}
+#MLM clean na
+MLM <- MLM %>%
+  filter(Ext != "NA")
+
+##centering
+#Center Ext
+MLM <- MLM %>%
+  mutate(cext = Ext - mean(Ext))
+
+#center level 1 variables
+MLM <- MLM %>%
+  group_by(Person) %>%
+  mutate(msi = mean(NumPeople),
+         csi = NumPeople - msi)
+
+##analyses 
+m_MLM <- lmerTest::lmer(Hap ~ cext + csi + cext*csi + (csi + 1 || Person) , data = MLM)
+summary(m_MLM)
+
+#raw model
+m_MLM <- lmerTest::lmer(Hap ~ Ext + csi + Ext*csi + (csi + 1 || Person) , data = MLM)
+summary(m_MLM)
+
+#when high extraverted people are centered to 0
+MLM$temp <- MLM$Ext - 1 
+m_MLM <- lmerTest::lmer(Hap ~ temp + csi + temp*csi + (csi + 1 || Person) , data = MLM)
+summary(m_MLM)
+
+##visual
+MLM %>%
+  ggplot(aes(x = csi, y = Hap, color = Ext))+
+  geom_point() + 
+  geom_smooth(aes(group = Ext), method = "lm", se = FALSE)
+```
